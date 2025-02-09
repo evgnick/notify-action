@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y wget jq curl && \
 WORKDIR /app
 
 # Копируем скрипты в контейнер
-COPY find_ci_run.sh find_ci_run.sh
-COPY fetch_results.sh fetch_results.sh
-COPY generate_chart.py generate_chart.py
-COPY notify_telegram.sh notify_telegram.sh
-COPY run_all.sh run_all.sh
+COPY find_ci_run.sh /app/find_ci_run.sh
+COPY fetch_results.sh /app/fetch_results.sh
+COPY generate_chart.py /app/generate_chart.py
+COPY notify_telegram.sh /app/notify_telegram.sh
+COPY run_all.sh /app/run_all.sh
 
 # Устанавливаем права на выполнение для всех скриптов
 RUN chmod +x find_ci_run.sh fetch_results.sh notify_telegram.sh run_all.sh
