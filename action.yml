@@ -1,0 +1,21 @@
+name: 'Notify Action'
+description: 'Finds latest CI run, fetches test results, generates a chart, and sends a Telegram notification'
+inputs:
+  github-token:
+    description: 'GitHub Token'
+    required: true
+  telegram-token:
+    description: 'Telegram Bot Token'
+    required: true
+  telegram-chat-id:
+    description: 'Telegram Chat ID'
+    required: true
+  workflow-name:
+    description: 'Name of the CI workflow'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+branding:
+  icon: 'bell'
+  color: 'blue'
