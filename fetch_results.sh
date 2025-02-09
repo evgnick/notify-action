@@ -1,25 +1,22 @@
 #!/bin/bash
 
-# Получаем параметры
-REPO_NAME="$1"
-REPO_OWNER="$2"
-RUN_NUMBER="$3"
-GITHUB_TOKEN="$4"
+# Принимаем параметры
+REPO_NAME=$1
+REPO_OWNER=$2
+RUN_NUMBER=$3
 
-# Формируем URL для получения деталей запуска
-API_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_NUMBER"
+# Получаем результаты тестов
+RESULTS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_NUMBER/artifacts")
 
-# Получаем результат выполнения
-echo "Получение результатов для RUN_NUMBER=$RUN_NUMBER"
+# Извлекаем ссылку на артефакт (предположим, что он первый в списке)
+ARTIFACT_URL=$(echo "$RESULTS" | jq -r '.artifacts[0].archive_download_url')
 
-response=$(curl -H "Authorization: Bearer $GITHUB_TOKEN" "$API_URL")
+# Скачиваем артефакт
+curl -L -o results.zip -H "Authorization: token $GITHUB_TOKEN" "$ARTIFACT_URL"
 
-if [[ $? -ne 0 ]]; then
-  echo "Не удалось получить данные о результате"
-  exit 1
-fi
+# Распаковываем результат
+unzip -o results.zip -d /app/results
 
-# Записываем результат в файл
-echo "$response" | jq '.status, .conclusion' > /app/results.txt
-
-echo "Результаты записаны в /app/results.txt"
+# Теперь результаты готовы
+echo "Results downloaded and extracted."

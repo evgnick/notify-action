@@ -1,24 +1,21 @@
 #!/bin/bash
 
-# Получаем параметры
-GITHUB_TOKEN="$1"
-WORKFLOW_NAME="$2"
+# Принимаем параметры
+GITHUB_TOKEN=$1
+WORKFLOW_NAME=$2
 
-# Получаем информацию о запуске воркфлоу
-API_URL="https://api.github.com/repos/$GITHUB_REPOSITORY_OWNER/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_NAME/runs"
+# Используем API GitHub для получения CI-run
+RUN_DATA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+  "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_NAME.yml/runs?status=success")
 
-echo "Запуск find_ci_run.sh с токеном: $GITHUB_TOKEN для workflow: $WORKFLOW_NAME"
+# Получаем последний успешный run
+RUN_ID=$(echo "$RUN_DATA" | jq -r '.workflow_runs[0].id')
+RUN_NUMBER=$(echo "$RUN_DATA" | jq -r '.workflow_runs[0].run_number')
+REPO_OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 1)
+REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)
 
-# Запрашиваем данные о последних запусках воркфлоу
-response=$(curl -H "Authorization: Bearer $GITHUB_TOKEN" "$API_URL")
-
-# Проверяем успешность запроса
-if [[ $? -ne 0 ]]; then
-  echo "Не удалось получить данные из GitHub API"
-  exit 1
-fi
-
-# Записываем информацию о первом успешном запуске в файл
-echo "$response" | jq -r '.workflow_runs[0] | "\(.id) \(.run_number) \(.repository.owner.login) \(.repository.name)"' > /app/ci_run.txt
-
-echo "Данные записаны в /app/ci_run.txt"
+# Выводим результаты в консоль
+echo "RUN_ID=$RUN_ID"
+echo "RUN_NUMBER=$RUN_NUMBER"
+echo "REPO_OWNER=$REPO_OWNER"
+echo "REPO_NAME=$REPO_NAME"
