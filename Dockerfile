@@ -16,7 +16,10 @@ COPY notify_telegram.sh /app/notify_telegram.sh
 COPY run_all.sh /app/run_all.sh
 
 # Устанавливаем права на выполнение для всех скриптов
-RUN chmod +x find_ci_run.sh fetch_results.sh notify_telegram.sh run_all.sh
+RUN chmod +x /app/find_ci_run.sh /app/fetch_results.sh /app/notify_telegram.sh /app/run_all.sh
+
+# Проверим файлы, чтобы убедиться, что все на месте
+RUN ls -la /app
 
 # Используем новый скрипт для выполнения всех шагов
 ENTRYPOINT ["bash", "/app/run_all.sh"]
