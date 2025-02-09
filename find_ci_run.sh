@@ -1,25 +1,27 @@
 #!/bin/bash
-set -e
 
 GITHUB_TOKEN=$1
 WORKFLOW_NAME=$2
 
-# Получаем владельца и название репозитория из переменных окружения GitHub Actions
-REPO_OWNER=${GITHUB_REPOSITORY_OWNER}
-REPO_NAME=$(basename $GITHUB_REPOSITORY)
+echo "Запуск find_ci_run.sh с токеном: $GITHUB_TOKEN для workflow: $WORKFLOW_NAME"
 
-# Получаем список запусков нужного workflow
-LATEST_CI_RUN=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs?per_page=50" \
-  | jq --arg WORKFLOW_NAME "$WORKFLOW_NAME" '.workflow_runs[] | select(.name == $WORKFLOW_NAME and .status == "completed" and (.conclusion == "success" or .conclusion == "failure")) | {id, run_number, created_at}' \
-  | jq -s 'sort_by(.created_at) | reverse | .[0]')
+# Получаем все успешные запуски для указанного workflow
+curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+     "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_NAME.yml/runs?status=success" \
+     | jq . > ci_run.json
 
-RUN_ID=$(echo "$LATEST_CI_RUN" | jq -r '.id')
-RUN_NUMBER=$(echo "$LATEST_CI_RUN" | jq -r '.run_number')
+# Отладочный вывод
+echo "Ответ API:"
+cat ci_run.json
 
-if [[ "$RUN_ID" == "null" || "$RUN_NUMBER" == "null" ]]; then
-  echo "Error: No successful runs found for workflow: $WORKFLOW_NAME"
-  exit 1
+# Проверяем, есть ли успешные запуски
+RUN_ID=$(jq -r '.workflow_runs[0].id' ci_run.json)
+RUN_NUMBER=$(jq -r '.workflow_runs[0].run_number' ci_run.json)
+
+if [[ -z "$RUN_ID" || -z "$RUN_NUMBER" ]]; then
+    echo "Не удалось найти успешные CI запуски"
+    exit 1
 fi
 
-echo "$RUN_ID $RUN_NUMBER $REPO_OWNER $REPO_NAME" > ci_run.txt
+# Сохраняем информацию о запуске в файл для дальнейшего использования
+echo "$RUN_ID $RUN_NUMBER $GITHUB_REPOSITORY_OWNER $GITHUB_REPOSITORY" > ci_run.txt
