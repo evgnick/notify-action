@@ -1,20 +1,32 @@
 #!/bin/bash
 
-# Выводим текущую директорию и список файлов для отладки
-echo "Текущая директория: $(pwd)"
-echo "Список файлов: $(ls -la)"
+# Получаем параметры
+GITHUB_TOKEN="$1"
+TELEGRAM_TOKEN="$2"
+TELEGRAM_CHAT_ID="$3"
+WORKFLOW_NAME="$4"
 
-# Найдем последний CI запуск
-/app/find_ci_run.sh $GITHUB_TOKEN
+# Получаем данные о последнем успешном запуске CI
+echo "Запуск find_ci_run.sh с токеном: $GITHUB_TOKEN для workflow: $WORKFLOW_NAME"
+./find_ci_run.sh $GITHUB_TOKEN $WORKFLOW_NAME
 
-# Читаем данные из ci_run.txt
+# Чтение информации о последнем запуске
+if [[ ! -f "/app/ci_run.txt" ]]; then
+  echo "Не удалось найти файл ci_run.txt"
+  exit 1
+fi
+
+# Извлекаем данные из файла
 read RUN_ID RUN_NUMBER REPO_OWNER REPO_NAME < /app/ci_run.txt
 
-# Получаем результаты Allure
-/app/fetch_results.sh $REPO_NAME $REPO_OWNER $RUN_NUMBER
+# Получаем результаты выполнения
+echo "Запуск fetch_results.sh для RUN_NUMBER=$RUN_NUMBER"
+./fetch_results.sh $REPO_NAME $REPO_OWNER $RUN_NUMBER $GITHUB_TOKEN
 
-# Генерируем диаграмму
+# Генерация графика
+echo "Запуск generate_chart.py"
 python3 /app/generate_chart.py
 
-# Отправляем уведомление в Telegram
-/app/notify_telegram.sh $REPO_NAME $REPO_OWNER $RUN_NUMBER $TELEGRAM_TOKEN $TELEGRAM_CHAT_ID
+# Отправка уведомления в Telegram
+echo "Запуск notify_telegram.sh"
+./notify_telegram.sh $REPO_NAME $REPO_OWNER $RUN_NUMBER $TELEGRAM_TOKEN $TELEGRAM_CHAT_ID

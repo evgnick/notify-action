@@ -1,20 +1,25 @@
 #!/bin/bash
-set -e
 
-REPO_NAME=$1
-REPO_OWNER=$2
-RUN_NUMBER=$3
+# Получаем параметры
+REPO_NAME="$1"
+REPO_OWNER="$2"
+RUN_NUMBER="$3"
+GITHUB_TOKEN="$4"
 
-REPORT_URL="https://$REPO_OWNER.github.io/$REPO_NAME/$RUN_NUMBER/widgets/summary.json"
+# Формируем URL для получения деталей запуска
+API_URL="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_NUMBER"
 
-wget -q -O summary.json "$REPORT_URL" || { echo "Failed to download report"; exit 1; }
+# Получаем результат выполнения
+echo "Получение результатов для RUN_NUMBER=$RUN_NUMBER"
 
-PASSED=$(jq '.statistic.passed' summary.json || echo "0")
-FAILED=$(jq '.statistic.failed' summary.json || echo "0")
-BROKEN=$(jq '.statistic.broken' summary.json || echo "0")
-SKIPPED=$(jq '.statistic.skipped' summary.json || echo "0")
-UNKNOWN=$(jq '.statistic.unknown' summary.json || echo "0")
-DURATION=$(jq '.time.duration' summary.json || echo "0")
-DURATION_FINAL=$(date -ud @$((DURATION / 1000)) +'%M:%S')
+response=$(curl -H "Authorization: Bearer $GITHUB_TOKEN" "$API_URL")
 
-echo "$PASSED $FAILED $BROKEN $SKIPPED $UNKNOWN $DURATION_FINAL" > results.txt
+if [[ $? -ne 0 ]]; then
+  echo "Не удалось получить данные о результате"
+  exit 1
+fi
+
+# Записываем результат в файл
+echo "$response" | jq '.status, .conclusion' > /app/results.txt
+
+echo "Результаты записаны в /app/results.txt"

@@ -1,26 +1,29 @@
 #!/bin/bash
-set -e
 
-REPO_NAME=$1
-REPO_OWNER=$2
-RUN_NUMBER=$3
-TELEGRAM_TOKEN=$4
-TELEGRAM_CHAT_ID=$5
+# Получаем параметры
+REPO_NAME="$1"
+REPO_OWNER="$2"
+RUN_NUMBER="$3"
+TELEGRAM_TOKEN="$4"
+TELEGRAM_CHAT_ID="$5"
 
-REPORT_LINK="https://$REPO_OWNER.github.io/$REPO_NAME/$RUN_NUMBER/"
-CI_RUN_LINK="https://github.com/$REPO_OWNER/$REPO_NAME/actions/runs/$RUN_NUMBER"
-TIMESTAMP=$(date +"%Y.%m.%d %H:%M:%S")
+# Чтение результатов из файла
+RESULTS_FILE="/app/results.txt"
+if [[ ! -f "$RESULTS_FILE" ]]; then
+  echo "Результаты не найдены"
+  exit 1
+fi
 
-read PASSED FAILED BROKEN SKIPPED UNKNOWN DURATION_FINAL < results.txt
+STATUS=$(cat "$RESULTS_FILE" | head -n 1)
+CONCLUSION=$(cat "$RESULTS_FILE" | tail -n 1)
 
-MESSAGE="📝 Report: [open]($REPORT_LINK)
-📅 Date: $TIMESTAMP
-⏱️ Execution time: $DURATION_FINAL
-⚙️ Build: $RUN_NUMBER
-🔗 Run: [see]($CI_RUN_LINK)"
+# Отправка уведомления в Telegram
+MESSAGE="Результат выполнения CI для $REPO_NAME / $REPO_OWNER, RUN #$RUN_NUMBER:
+Статус: $STATUS
+Заключение: $CONCLUSION"
 
-curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendPhoto" \
-  -F chat_id="$TELEGRAM_CHAT_ID" \
-  -F photo="@chart.png" \
-  -F caption="$MESSAGE" \
-  -F parse_mode="MarkdownV2"
+curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+     -d chat_id=$TELEGRAM_CHAT_ID \
+     -d text="$MESSAGE"
+
+echo "Уведомление отправлено в Telegram"
