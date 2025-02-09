@@ -1,10 +1,10 @@
 name: Notify Action
 description: A custom GitHub Action for sending notifications to Telegram after CI completion.
+
 inputs:
   github-token:
     description: 'GitHub token for API requests'
     required: true
-    default: ${{ secrets.GITHUB_TOKEN }}
   telegram-token:
     description: 'Telegram bot token'
     required: true
@@ -15,6 +15,7 @@ inputs:
     description: 'Name of the workflow to check for runs'
     required: true
     default: 'CI'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -23,6 +24,7 @@ runs:
     - ${{ inputs.telegram-token }}
     - ${{ inputs.telegram-chat-id }}
     - ${{ inputs.workflow-name }}
+
 branding:
   icon: 'bell'
   color: 'blue'
